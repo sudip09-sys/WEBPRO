@@ -1,0 +1,54 @@
+name: Publish WebPRO
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: webpro-pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare authorized learning materials
+        if: ${{ hashFiles('materials/LICENSE') == '' }}
+        run: |
+          curl --fail --location --retry 3 'https://codeload.github.com/lukasrohatsch/webprogramming/tar.gz/f67186b99210862da322baa957a1e22ea6d4924e' -o /tmp/webpro-materials.tar.gz
+          mkdir -p /tmp/webpro-materials materials
+          tar -xzf /tmp/webpro-materials.tar.gz -C /tmp/webpro-materials --strip-components=1
+          cp -R /tmp/webpro-materials/Lecture* /tmp/webpro-materials/themes /tmp/webpro-materials/LICENSE materials/
+          mkdir -p downloads
+          for i in $(seq -w 1 13); do
+            (cd materials && zip -qr "../downloads/lecture-${i}.zip" "Lecture${i}" LICENSE)
+          done
+          git config user.name 'WebPRO'
+          git config user.email '325164954+sudip09-sys@users.noreply.github.com'
+          git add materials downloads
+          git commit -m 'Add authorized course materials and module downloads'
+          git push
+      - name: Check site scripts
+        run: |
+          node --check app.js
+          node --check lab/lab.js
+          test -f downloads/lecture-13.zip
+          test -f materials/LICENSE
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Prepare public site
+        run: |
+          mkdir -p /tmp/webpro-public
+          rsync -a --exclude='.git' --exclude='.github' ./ /tmp/webpro-public/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/webpro-public
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
