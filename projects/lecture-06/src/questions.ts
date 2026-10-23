@@ -1,0 +1,2 @@
+export interface Question { text:string; answers:string[]; correct:number; }
+export const questions:Question[]=[{text:'Which method attaches a click handler?',answers:['addEventListener','JSON.parse','Math.random'],correct:0},{text:'Which keyword declares a block-scoped variable?',answers:['var','let','style'],correct:1},{text:'What does fetch return?',answers:['An element','A Promise','A selector'],correct:1},{text:'What does an interface describe?',answers:['The shape of data','An audio file','A web server'],correct:0}];
